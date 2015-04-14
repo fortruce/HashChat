@@ -6,6 +6,7 @@ var gulp = require('gulp'),
     browserSync = require('browser-sync'),
     nodemon = require('gulp-nodemon'),
     rename = require('gulp-rename'),
+    sass = require('gulp-sass'),
     reload = browserSync.reload;
 
 var path = {
@@ -13,7 +14,9 @@ var path = {
   html: "src/html/index.html",
   build: "public/build",
   pub: "public/",
-  server: "src/server/index.js"
+  server: "src/server/index.js",
+  sass: "src/scss/**/*.scss",
+  css: "public/css"
 };
 
 gulp.task('default', ['browser-sync']);
@@ -24,7 +27,7 @@ gulp.task('copyHtml', function() {
 });
 
 // Runs all static source file updates (besides browserify)
-gulp.task('static', ['copyHtml']);
+gulp.task('static', ['copyHtml', 'sass']);
 
 // proxy requests thru browser-sync for reloads
 gulp.task('browser-sync', ['server'], function() {
@@ -33,12 +36,20 @@ gulp.task('browser-sync', ['server'], function() {
   });
 });
 
+gulp.task('sass', function() {
+  gulp.src(path.sass)
+      .pipe(sass())
+      .pipe(gulp.dest(path.css))
+      .pipe(reload({stream: true}));
+});
+
 // autorun all build tasks and trigger browser-sync reloads
 gulp.task('watch', ['static', 'browserify'], function() {
   gulp.watch(path.html, ['copyHtml'])
       .on('change', reload);
   gulp.watch(path.build + '**/*.*')
       .on('change', reload);
+  gulp.watch(path.sass, ['sass']);
 });
 
 // starts the web server and watches for file changes

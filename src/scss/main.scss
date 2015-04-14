@@ -1,0 +1,27 @@
+.chatBox {
+    margin: 0 auto;
+    max-width: 80%;
+}
+
+.chatList {
+    padding: 20px 0;
+}
+
+.chat {
+    &__author {
+        color: red;
+    }
+    &__author:after {
+        content: ": ";
+    }
+    &__message {
+        display: inline;
+        color: blue;
+    }
+}
+
+.chatInput {
+    &__message {
+        width: 100%;
+    }
+}
