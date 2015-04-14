@@ -1,0 +1,19 @@
+{
+  "name": "hashchat",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "browser-sync": "^2.6.3",
+    "browserify": "^9.0.8",
+    "express": "^4.12.3",
+    "gulp": "^3.8.11",
+    "gulp-nodemon": "^2.0.2",
+    "gulp-rename": "^1.2.2",
+    "path": "^0.11.14",
+    "react": "^0.13.1",
+    "reactify": "^1.1.0",
+    "vinyl-source-stream": "^1.1.0",
+    "watchify": "^3.1.0"
+  }
+}
