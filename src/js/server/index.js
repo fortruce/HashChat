@@ -6,7 +6,9 @@ var express = require('express'),
     http = require('http').Server(app),
     io = require('socket.io')(http),
 
-    Nicks = require('./nicks');
+    Nicks = require('./nicks'),
+    Events = require('./events'),
+    Rooms = require('./rooms');
 
 app.use(express.static(path.join(__dirname, '..', '..', '..', 'public')));
 
@@ -17,17 +19,6 @@ io.on('connection', function(socket) {
 http.listen(8080, function() {
   console.log('server listening on *:8080');
 });
-
-var Events = {
-  join: function(user, room) { return {type: 'join',
-                                       room: room,
-                                       user: user}; },
-  leave: function(user, room) { return {type: 'leave',
-                                        room: room,
-                                        user: user}; },
-  error: function(error) { return {type: 'error',
-                                   error: error}; }
-}
 
 var NickManager = new Nicks();
 
@@ -45,29 +36,17 @@ function handler(io, socket) {
   socket.emit('nick', socket.nick);
 
   var general = "general";
-  var rooms = Object.create(null);
+  socket.RoomManager = new Rooms(socket);
 
   // broadcast general room events
-  rooms[general] = true;
-  socket.join(general);
-  socket.broadcast.to(general)
-    .emit('event', Events.join(socket.nick,
-                               general));
+  socket.RoomManager.join(general); 
 
   // leave all rooms
   socket.on('disconnect', function() {
     log('disconnect');
     // remove the socket from all rooms
-    for (var room in rooms) {
-      if (!rooms[room])
-        continue;
+    socket.RoomManager.leaveAll();
 
-      rooms[room] = false;
-      io.to(room)
-        .emit('event', Events.leave(socket.nick,
-                                    room));
-      socket.leave(room)
-    }
     // remove the sockets registered nick
     NickManager.unregister(socket.nick);
   });
@@ -87,7 +66,6 @@ function handler(io, socket) {
 
     socket.emit('nick', socket.nick);
   });
-    
 
   // forward chat events to the room they came from
   socket.on('chat', function(message) {
@@ -96,7 +74,7 @@ function handler(io, socket) {
     
     // make sure this socket is a member of the room
     var room = message.room;
-    if (!(room in rooms))
+    if (!socket.RoomManager.exists(room))      
       return;
 
     message.user = socket.nick;
@@ -108,26 +86,12 @@ function handler(io, socket) {
   // join a new room
   socket.on('join', function(room) {
     log('join', room);
-    if (rooms[room])
-      return;
-    
-    rooms[room] = true;
-    socket.join(room);
-    io.to(room)
-      .emit('event', Events.join(socket.nick,
-                                 room));
+    socket.RoomManager.join(room);
   });
 
   // leave a room
   socket.on('leave', function(room) {
     log('leave', room);
-    if (!rooms[room])
-      return;
-    
-    rooms[room] = false;
-    io.to(room)
-      .emit('event', Events.leave(socket.nick,
-                                  room));
-    socket.leave(room);
+    RoomManger.leave(room);
   });
 };
