@@ -1,7 +1,7 @@
 var crypto = require('crypto');
 
 function Nicks() {
-  this.nicks = {}
+  this.nicks = Object.create(null);
 }
 
 Nicks.prototype.randomNick = function(n) {
