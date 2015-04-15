@@ -6,8 +6,7 @@ var express = require('express'),
     http = require('http').Server(app),
     io = require('socket.io')(http),
 
-    crypto = require('crypto');
-
+    Nicks = require('./nicks');
 
 app.use(express.static(path.join(__dirname, '..', '..', '..', 'public')));
 
@@ -18,21 +17,6 @@ io.on('connection', function(socket) {
 http.listen(8080, function() {
   console.log('server listening on *:8080');
 });
-
-var Nicks = {}
-
-function randomNick(n) {
-  var nick;
-  do {
-    nick = 'user' + crypto.randomBytes(Math.ceil(n/2))
-        .toString('hex')
-        .slice(0, n);
-  } while (Nicks[nick]);
-
-  Nicks[nick] = true;
-  return nick;
-}
-  
 
 var Events = {
   join: function(user, room) { return {type: 'join',
@@ -45,6 +29,8 @@ var Events = {
                                    error: error}; }
 }
 
+var NickManager = new Nicks();
+
 function handler(io, socket) {
   function log() {
     var args = Array.prototype.slice.call(arguments, log.length);
@@ -52,10 +38,11 @@ function handler(io, socket) {
     console.log.apply(console, args);
   }
 
-  socket.nick = randomNick(6);
-  socket.emit('nick', socket.nick);
-
   log('connected');
+
+  // generate a random nick for the new socket
+  socket.nick = NickManager.randomNick(6);
+  socket.emit('nick', socket.nick);
 
   var general = "general";
   var rooms = Object.create(null);
@@ -82,22 +69,20 @@ function handler(io, socket) {
       socket.leave(room)
     }
     // remove the sockets registered nick
+    NickManager.unregister(socket.nick);
   });
 
   socket.on('nick', function(nick) {
     log('nick', nick);
 
-    if (Nicks[nick]) {
-      log('nick failed');
+    if (NickManager.exists(nick)) {
       socket.emit('event', Events.error('nick already taken'));
       return;
     }
 
-    // unregister old nick
-    Nicks[socket.nick] = false;
-    
-    // set new nick
-    Nicks[nick] = true;
+    NickManager.unregister(socket.nick);
+    NickManager.register(nick);
+
     socket.nick = nick;
 
     socket.emit('nick', socket.nick);
