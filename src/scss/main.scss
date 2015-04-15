@@ -8,10 +8,10 @@
 }
 
 .chat {
-    &__author {
+    &__user {
         color: red;
     }
-    &__author:after {
+    &__user:after {
         content: ": ";
     }
     &__message {

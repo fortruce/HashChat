@@ -10,11 +10,11 @@ var gulp = require('gulp'),
     reload = browserSync.reload;
 
 var path = {
-  app: "./src/client/app.js",
+  app: "./src/js/client/app.js",
   html: "src/html/index.html",
   build: "public/build",
   pub: "public/",
-  server: "src/server/index.js",
+  server: "src/js/server/index.js",
   sass: "src/scss/**/*.scss",
   css: "public/css"
 };

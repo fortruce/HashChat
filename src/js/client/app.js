@@ -1,12 +1,18 @@
 var React = require('react'),
-    io = require('socket.io-client');
+    io = require('socket.io-client'),
+    crypto = require('crypto');
+
+var socket = io(':3000');
+
+// REMOVE - expose socket for debugging
+window.socket = socket;
 
 var Chat = React.createClass({
   render: function() {
     return (
       <div className="chat">
-        <span className="chat__author">
-          {this.props.author}
+        <span className="chat__user">
+          {this.props.user}
         </span>
         <p className="chat__message">{this.props.children.toString()}</p>
       </div>
@@ -18,7 +24,7 @@ var ChatList = React.createClass({
   render: function() {
     var chatNodes = this.props.chats.map(function (chat) {
       return (
-        <Chat author={chat.author}>
+        <Chat user={chat.user}>
           {chat.message}
         </Chat>
       );
@@ -53,31 +59,66 @@ function log(tag, msg) {
   console.log('[' + tag + ']: ' + msg);
 }
 
+function randomNick(n) {
+  return 'user' + crypto.randomBytes(Math.ceil(n/2))
+               .toString('hex')
+               .slice(0, n);
+}
+
+
 var ChatBox = React.createClass({
   getInitialState: function() {
-    return {chats: []};
-  },
-  componentDidMount: function() {
-    this.socket = io(':3000', {query: 'room=' + this.props.room});
-    this.socket.on('connect', function() {
-      log(this.props.room, 'connected');
-    }.bind(this));
-    this.socket.on('chat', function(msg) {
-      log(this.props.room, 'received message');
+    console.log('joined');
+
+    socket.on('chat', function(message) {
       var oldChats = this.state.chats;
-      var newChats = oldChats.concat(msg);
+      var newChats = oldChats.concat(message);
       this.setState({chats: newChats});
     }.bind(this));
+
+    socket.on('nick', function(nick) {
+      this.setState({nick: nick});
+    }.bind(this));
+
+    socket.on('event', function(event) {
+      var message;
+      switch(event.type) {
+      case 'join':
+        message = event.user + ' joined ' + event.room;
+        break;
+      case 'leave':
+        message = event.user + ' left ' + event.room;
+        break;
+      case 'error':
+        message = event.error;
+        break;
+      default:
+        message = 'undefined event received: ' + event.toString();
+        break;
+      }
+      message = {user: 'server',
+                 message: message};
+      var oldChats = this.state.chats;
+      var newChats = oldChats.concat(message);
+      this.setState({chats: newChats});
+    }.bind(this));
+    
+    return {nick: "",
+            chats: []};
+  },
+  componentDidMount: function() {
+    socket.emit('join', this.props.room);
   },
   onMessageSubmit: function(chat) {
-    log(this.props.room, 'sending message');
-    this.socket.emit('chat', {author: 'user', message: chat.message});
+    socket.emit('chat', {room: this.props.room,
+                         message: chat.message});
   },
   render: function() {
     return (
       <div className="chatBox">
         Hello
         <ChatList chats={this.state.chats}/>
+        <p>{this.state.nick}</p>
         <ChatInput onMessageSubmit={this.onMessageSubmit} />
       </div>
     );
