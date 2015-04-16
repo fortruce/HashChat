@@ -7,7 +7,6 @@ var express = require('express'),
     io = require('socket.io')(http),
 
     Nicks = require('./nicks'),
-    Events = require('./events'),
     Rooms = require('./rooms');
 
 app.use(express.static(path.join(__dirname, '..', '..', '..', 'public')));
@@ -54,8 +53,13 @@ function handler(io, socket) {
   socket.on('nick', function(nick) {
     log('nick', nick);
 
+    if (nick.length > 16) {
+      socket.emit('server', 'nick too long (max: 16)');
+      return;
+    }
+
     if (NickManager.exists(nick)) {
-      socket.emit('event', Events.error('nick already taken'));
+      socket.emit('server', 'nick already taken');
       return;
     }
 
