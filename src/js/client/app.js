@@ -38,14 +38,20 @@ var ChatList = React.createClass({
 });
 
 var ChatInput = React.createClass({
+  
   handleSubmit: function(e) {
     e.preventDefault();
     var message = React.findDOMNode(this.refs.message).value.trim();
-    if (!message) { return; }
+    
+    if (!message)
+      return;
+
     this.props.onMessageSubmit({message: message});
+
     React.findDOMNode(this.refs.message).value = '';
     return;
   },
+  
   render: function() {
     return (
       <form className="chatInput" onSubmit={this.handleSubmit}>
@@ -55,25 +61,19 @@ var ChatInput = React.createClass({
   }
 });
 
-function log(tag, msg) {
-  console.log('[' + tag + ']: ' + msg);
-}
-
-function randomNick(n) {
-  return 'user' + crypto.randomBytes(Math.ceil(n/2))
-               .toString('hex')
-               .slice(0, n);
-}
-
-
 var ChatBox = React.createClass({
+  addMessage: function(message) {
+    var oldChats = this.state.chats;
+    var newChats = oldChats.concat(message);
+    this.setState({chats: newChats});
+  },
   getInitialState: function() {
-    console.log('joined');
-
     socket.on('chat', function(message) {
-      var oldChats = this.state.chats;
-      var newChats = oldChats.concat(message);
-      this.setState({chats: newChats});
+      // ignore if message not meant for this room
+      if (message.room != this.props.room)
+        return;
+      
+      this.addMessage(message);
     }.bind(this));
 
     socket.on('nick', function(nick) {
@@ -98,9 +98,7 @@ var ChatBox = React.createClass({
       }
       message = {user: 'server',
                  message: message};
-      var oldChats = this.state.chats;
-      var newChats = oldChats.concat(message);
-      this.setState({chats: newChats});
+      this.addMessage(message);
     }.bind(this));
     
     return {nick: "",
