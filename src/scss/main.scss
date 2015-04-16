@@ -4,12 +4,12 @@ body {
     color: #777;
 }
 
-.chatBox {
+.chatContainer {
     margin: 0 auto;
     max-width: 80%;
 }
 
-.chatList {
+.chatBox {
     padding: 20px 0;
 }
 
@@ -20,6 +20,7 @@ body {
     
     &__user {
         flex: 0 0 $user-width;
+        text-align: right;
     }
     &__user:after {
         content: ": ";

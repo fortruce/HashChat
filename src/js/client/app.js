@@ -1,4 +1,4 @@
-var React = require('react'),
+var React = require('react/addons'),
     io = require('socket.io-client'),
     crypto = require('crypto');
 
@@ -33,17 +33,17 @@ var Chat = React.createClass({
   }
 });
 
-var ChatList = React.createClass({
+var ChatBox = React.createClass({
   render: function() {
-    var chatNodes = this.props.chats.map(function (chat) {
+    var chatNodes = this.props.messages.map(function (message) {
       return (
-        <Chat user={chat.user}>
-          {chat.message}
+        <Chat user={message.user}>
+          {message.message}
         </Chat>
       );
     });
     return (
-      <div className="chatList">
+      <div className="chatBox">
         {chatNodes}
       </div>
     );
@@ -105,7 +105,8 @@ var EditableButton = React.createClass({
     this.setState({editing: e});
   },
   onChange: function(e) {
-    this.setState({text: e.target.value.trim()});
+    if (e.target.value.length <= this.props.maxLength)
+      this.setState({text: e.target.value.trim()});
   },
   valid: function() {
     var t = React.findDOMNode(this.refs.input).value.trim();
@@ -162,38 +163,20 @@ var EditableButton = React.createClass({
 });
 
 var ChatContainer = React.createClass({
-  getInitialState: function() {
-    return {room: 'general'}
-  },
-  handleRoomChange: function(room) {
-    socket.emit('join', room);
-    this.setState({room: room});
-  },
-  render: function() {
-    return (
-      <div>
-        <EditableButton text={this.state.room}
-                        maxLength={20}
-                        onChange={this.handleRoomChange} />
-        <ChatBox room={this.state.room} />
-      </div>
-    );
-  }
-});
-
-var ChatBox = React.createClass({
   addMessage: function(message) {
-    var oldChats = this.state.chats;
-    var newChats = oldChats.concat(message);
-    this.setState({chats: newChats});
+    this.setState(function(pState) {
+      var room = message.room ? message.room : this.state.active;
+      var messages = React.addons.update(pState.rooms[room],
+                                         {$push: [message]});
+      var newRoom = {};
+      newRoom[room] = messages;
+      var newRooms = React.addons.update(pState.rooms,
+                                         {$merge: newRoom});
+      return {rooms: newRooms};
+    });
   },
   getInitialState: function() {
     socket.on('chat', function(message) {
-      // ignore if message not meant for this room
-      if (message.room !== true &&
-          message.room !== this.props.room)
-        return;
-      
       this.addMessage(message);
     }.bind(this));
 
@@ -205,28 +188,45 @@ var ChatBox = React.createClass({
       var message = event.message;
       if (typeof event == 'string' || event instanceof String)
         message = event;
-      
-      if (event.room && event.room !== this.props.room)
-        return;
-      
+
       this.addMessage({user: 'server',
-                       message: event.message});
+                       message: message});
     }.bind(this));
-    
-    return {nick: "",
-            chats: []};
+        
+    return {active: 'general',
+            nick: '',
+            rooms: {'general': []}};
   },
   componentDidMount: function() {
-    socket.emit('join', this.props.room);
+    socket.emit('join', this.state.active);
   },
-  onMessageSubmit: function(chat) {
-    socket.emit('chat', {room: this.props.room,
-                         message: chat.message});
+  onMessageSubmit: function(message) {
+    socket.emit('chat', {room: this.state.active,
+                         message: message.message});
+  },
+  changeRoom: function(room) {
+    if (this.state.rooms[room]) {
+      this.setState({active: room});
+      return;
+    }
+
+    socket.emit('join', room);
+    var newRoom = {};
+    newRoom[room] = [];
+
+    var newRooms = React.addons.update(this.state.rooms,
+                                       {$merge: newRoom});
+    this.setState({rooms: newRooms,
+                  active: room});
   },
   render: function() {
+    var messages = this.state.rooms[this.state.active];
     return (
-      <div className="chatBox">
-        <ChatList chats={this.state.chats}/>
+      <div className="chatContainer">
+        <EditableButton text={this.state.active}
+                        maxLength={20}
+                        onChange={this.changeRoom} />
+        <ChatBox messages={messages} />
         <ChatInput nick={this.state.nick}
                    onMessageSubmit={this.onMessageSubmit} />
       </div>
