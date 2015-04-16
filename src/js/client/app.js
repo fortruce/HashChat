@@ -51,12 +51,58 @@ var ChatInput = React.createClass({
     React.findDOMNode(this.refs.message).value = '';
     return;
   },
-  
+
   render: function() {
     return (
       <form className="chatInput" onSubmit={this.handleSubmit}>
+        <EditableButton initialText="test" />
+        <a href="#" className="chatInput__nick">{this.props.nick}</a>
         <input id="in" className="chatInput__message" type="text" ref="message" />
       </form>
+    );
+  }
+});
+
+var EditableButton = React.createClass({
+  getInitialState: function() {
+    return {editing: false,
+            text: this.props.initialText};
+  },
+  toggleEditing: function() {
+    console.log('toggleEditing');
+    this.setState({editing: true});
+  },
+  handleChange: function(e) {
+    console.log('handleChange');
+    if (e.target.value.length > 16)
+      return;
+    this.setState({text: e.target.value});
+  },
+  handleKey: function(e) {
+    console.log('handleKey');
+    var key = e.keyCode || e.which;
+    if (key === 13) {
+      // prevent bubbling up - was calling button's onclick
+      // and keeping editing enabled
+      e.preventDefault();
+      this.setState({editing: false});
+    }
+  },
+  render: function() {
+    var inputClass = this.state.editing ? "" : "hidden";
+    var buttonClass = this.state.editing ? "hidden" : "";
+
+    return (
+      <div className="editableButton">
+    <input onChange={this.handleChange}
+           onKeyPress={this.handleKey}
+           type="text" ref="in"
+           value={this.state.text} className={inputClass} />
+      <button onClick={this.toggleEditing}
+              className={buttonClass}>
+      {this.state.text}
+    </button>
+        </div>
     );
   }
 });
@@ -70,7 +116,8 @@ var ChatBox = React.createClass({
   getInitialState: function() {
     socket.on('chat', function(message) {
       // ignore if message not meant for this room
-      if (message.room != this.props.room)
+      if (message.room !== true &&
+          message.room !== this.props.room)
         return;
       
       this.addMessage(message);
@@ -80,25 +127,9 @@ var ChatBox = React.createClass({
       this.setState({nick: nick});
     }.bind(this));
 
-    socket.on('event', function(event) {
-      var message;
-      switch(event.type) {
-      case 'join':
-        message = event.user + ' joined ' + event.room;
-        break;
-      case 'leave':
-        message = event.user + ' left ' + event.room;
-        break;
-      case 'error':
-        message = event.error;
-        break;
-      default:
-        message = 'undefined event received: ' + event.toString();
-        break;
-      }
-      message = {user: 'server',
-                 message: message};
-      this.addMessage(message);
+    socket.on('server', function(message) {
+      this.addMessage({user: 'server',
+                       message: message});
     }.bind(this));
     
     return {nick: "",
@@ -114,10 +145,8 @@ var ChatBox = React.createClass({
   render: function() {
     return (
       <div className="chatBox">
-        Hello
         <ChatList chats={this.state.chats}/>
-        <p>{this.state.nick}</p>
-        <ChatInput onMessageSubmit={this.onMessageSubmit} />
+        <ChatInput nick={this.state.nick} onMessageSubmit={this.onMessageSubmit} />
       </div>
     );
   }

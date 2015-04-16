@@ -20,8 +20,27 @@
     }
 }
 
+.editableButton {
+    .hidden {
+        display: none;
+    }
+}
+
 .chatInput {
+    display: flex;
+    width: 100%;
+    
     &__message {
+        margin-left: 20px;
+        flex: 1 0;
         width: 100%;
+    }
+
+    &__nick:after {
+        content: ": ";
+    }
+
+    &__nick {
+        flex: 0 0 100px;
     }
 }
