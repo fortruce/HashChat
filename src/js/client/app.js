@@ -7,13 +7,26 @@ var socket = io(':3000');
 // REMOVE - expose socket for debugging
 window.socket = socket;
 
+// create a 6 digit # color code from a string
+function stringToColor(s) {
+  var hash = 0;
+  for (var i = 0; i < s.length; i++) {
+    hash = s.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  for (var i = 0, color = '#'; i < 3; i++) {
+    color += ('00' + ((hash >> i * 8) & 0xFF).toString(16))
+             .slice(-2);
+  }
+  return color;
+}
+
 var Chat = React.createClass({
   render: function() {
     return (
       <div className="chat">
-        <span className="chat__user">
+        <div style={{color: stringToColor(this.props.user)}} className="chat__user">
           {this.props.user}
-        </span>
+        </div>
         <p className="chat__message">{this.props.children.toString()}</p>
       </div>
     );
@@ -40,7 +53,10 @@ var ChatList = React.createClass({
 var ChatInput = React.createClass({
   
   handleSubmit: function(e) {
-    e.preventDefault();
+    var key = e.keyCode || e.which;
+    if (key !== 13)
+      return;
+    
     var message = React.findDOMNode(this.refs.message).value.trim();
     
     if (!message)
@@ -51,14 +67,22 @@ var ChatInput = React.createClass({
     React.findDOMNode(this.refs.message).value = '';
     return;
   },
-
+  componentDidMount: function() {
+    React.findDOMNode(this.refs.message).focus();
+  },
+  nickChange: function(nick) {
+    if (nick !== this.props.nick)
+      socket.emit('nick', nick);
+  },
   render: function() {
     return (
-      <form className="chatInput" onSubmit={this.handleSubmit}>
-        <EditableButton initialText="test" />
-        <a href="#" className="chatInput__nick">{this.props.nick}</a>
-        <input id="in" className="chatInput__message" type="text" ref="message" />
-      </form>
+      <div className="chatInput" onSubmit={this.handleSubmit}>
+        <EditableButton text={this.props.nick}
+                        maxLength={16}
+                        onChange={this.nickChange} />
+        <input id="in" onKeyPress={this.handleSubmit}
+               className="chatInput__message" type="text" ref="message" />
+      </div>
     );
   }
 });
@@ -66,43 +90,93 @@ var ChatInput = React.createClass({
 var EditableButton = React.createClass({
   getInitialState: function() {
     return {editing: false,
-            text: this.props.initialText};
+            text: this.props.text};
+  },
+  componentWillReceiveProps: function(props) {
+    this.setState({text: props.text});
   },
   toggleEditing: function() {
-    console.log('toggleEditing');
-    this.setState({editing: true});
+    var e = !this.state.editing;
+
+    // revert input if edited value is not valid
+    if (this.state.editing && !this.valid())
+      this.setState({editing: e, text: this.props.text});
+    
+    this.setState({editing: e});
   },
-  handleChange: function(e) {
-    console.log('handleChange');
-    if (e.target.value.length > 16)
-      return;
-    this.setState({text: e.target.value});
+  onChange: function(e) {
+    this.setState({text: e.target.value.trim()});
   },
-  handleKey: function(e) {
-    console.log('handleKey');
+  valid: function() {
+    var t = React.findDOMNode(this.refs.input).value.trim();
+    return t.length > 0 && t.length <= this.props.maxLength;
+  },
+  commitEdit: function() {
+    this.toggleEditing();
+
+    if (this.valid())
+      this.props.onChange(this.state.text);
+  },
+  onEnter: function(e) {
     var key = e.keyCode || e.which;
     if (key === 13) {
-      // prevent bubbling up - was calling button's onclick
-      // and keeping editing enabled
-      e.preventDefault();
-      this.setState({editing: false});
+      this.commitEdit();
     }
   },
-  render: function() {
-    var inputClass = this.state.editing ? "" : "hidden";
-    var buttonClass = this.state.editing ? "hidden" : "";
+  onBlur: function(e) {
+    if (this.state.editing)
+      this.commitEdit();
+  },
+  componentDidUpdate: function() {
+    if (!this.state.editing)
+      return;
 
+    var input = React.findDOMNode(this.refs.input);
+    if (document.activeElement === input)
+      return;
+
+    // refresh value to put cursor at end
+    var val = input.value;
+    input.value = val;
+    input.focus();
+  },
+  render: function() {
+    var styles = this.state.editing ? [{}, {display: 'none'}] :
+                                      [{display: 'none'}, {}];
+    
     return (
       <div className="editableButton">
-    <input onChange={this.handleChange}
-           onKeyPress={this.handleKey}
-           type="text" ref="in"
-           value={this.state.text} className={inputClass} />
-      <button onClick={this.toggleEditing}
-              className={buttonClass}>
-      {this.state.text}
-    </button>
-        </div>
+       <button onClick={this.toggleEditing}
+               style={styles[1]}>
+         {this.state.text}
+       </button>
+       <input onBlur={this.onBlur}
+              onChange={this.onChange}
+              onKeyPress={this.onEnter}
+              style={styles[0]}
+              type="text" ref="input"
+              value={this.state.text}  />
+      </div>
+    );
+  }
+});
+
+var ChatContainer = React.createClass({
+  getInitialState: function() {
+    return {room: 'general'}
+  },
+  handleRoomChange: function(room) {
+    socket.emit('join', room);
+    this.setState({room: room});
+  },
+  render: function() {
+    return (
+      <div>
+        <EditableButton text={this.state.room}
+                        maxLength={20}
+                        onChange={this.handleRoomChange} />
+        <ChatBox room={this.state.room} />
+      </div>
     );
   }
 });
@@ -127,9 +201,16 @@ var ChatBox = React.createClass({
       this.setState({nick: nick});
     }.bind(this));
 
-    socket.on('server', function(message) {
+    socket.on('server', function(event) {
+      var message = event.message;
+      if (typeof event == 'string' || event instanceof String)
+        message = event;
+      
+      if (event.room && event.room !== this.props.room)
+        return;
+      
       this.addMessage({user: 'server',
-                       message: message});
+                       message: event.message});
     }.bind(this));
     
     return {nick: "",
@@ -146,13 +227,14 @@ var ChatBox = React.createClass({
     return (
       <div className="chatBox">
         <ChatList chats={this.state.chats}/>
-        <ChatInput nick={this.state.nick} onMessageSubmit={this.onMessageSubmit} />
+        <ChatInput nick={this.state.nick}
+                   onMessageSubmit={this.onMessageSubmit} />
       </div>
     );
   }
 });
 
 React.render(
-  <ChatBox room="boo" />,
+  <ChatContainer />,
   document.getElementById('app')
 );

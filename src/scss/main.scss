@@ -1,3 +1,9 @@
+$user-width: 130px;
+
+body {
+    color: #777;
+}
+
 .chatBox {
     margin: 0 auto;
     max-width: 80%;
@@ -8,21 +14,20 @@
 }
 
 .chat {
+    display: flex;
+    content: "";
+    clear: both;
+    
     &__user {
-        color: red;
+        flex: 0 0 $user-width;
     }
     &__user:after {
         content: ": ";
     }
     &__message {
+        flex: 1 0;
         display: inline;
-        color: blue;
-    }
-}
-
-.editableButton {
-    .hidden {
-        display: none;
+        margin: 0 0 0 10px;
     }
 }
 
@@ -31,7 +36,7 @@
     width: 100%;
     
     &__message {
-        margin-left: 20px;
+        margin-left: 10px;
         flex: 1 0;
         width: 100%;
     }
@@ -39,8 +44,12 @@
     &__nick:after {
         content: ": ";
     }
+}
 
-    &__nick {
-        flex: 0 0 100px;
+.editableButton {
+    flex: 0 0 $user-width;
+    input, button {
+        text-align: center;
+        width: 100%;
     }
 }

@@ -10,7 +10,8 @@ Rooms.prototype.join = function(room) {
   this.rooms[room] = true;
   this.socket.join(room);
 
-  var joined = this.socket.nick + ' joined';
+  var joined = {message: this.socket.nick + ' joined',
+                room: room};
 
   // send joined events to room and client
   this.socket.to(room)
@@ -34,7 +35,8 @@ Rooms.prototype.leave = function(room) {
 
   this.rooms[room] = false;
 
-  var left = this.socket.nick + ' disconnected';
+  var left = {message: this.socket.nick + ' disconnected',
+              room: room};
 
   // send leave events to room and client
   this.socket.to(room)

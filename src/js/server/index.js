@@ -34,11 +34,7 @@ function handler(io, socket) {
   socket.nick = NickManager.randomNick(6);
   socket.emit('nick', socket.nick);
 
-  var general = "general";
   socket.RoomManager = new Rooms(socket);
-
-  // broadcast general room events
-  socket.RoomManager.join(general); 
 
   // leave all rooms
   socket.on('disconnect', function() {
