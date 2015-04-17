@@ -9,11 +9,11 @@ body {
     max-width: 80%;
 }
 
-.chatBox {
+.messageList {
     padding: 20px 0;
 }
 
-.chat {
+.message {
     display: flex;
     content: "";
     clear: both;
@@ -25,7 +25,7 @@ body {
     &__user:after {
         content: ": ";
     }
-    &__message {
+    &__text {
         flex: 1 0;
         display: inline;
         margin: 0 0 0 10px;
