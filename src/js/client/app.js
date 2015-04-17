@@ -211,8 +211,8 @@ var ChatContainer = React.createClass({
     }
 
     socket.emit('join', room);
-    var newRoom = {};
-    newRoom[room] = [];
+    
+    var newRoom = {[room]: []};
 
     var newRooms = React.addons.update(this.state.rooms,
                                        {$merge: newRoom});
