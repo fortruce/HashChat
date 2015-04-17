@@ -3,6 +3,7 @@ var React = require('react'),
     Events = require('../Events'),
     MessageStore = require('./MessageStore'),
 
+    Tabs = require('./Tabs'),
     Nick = require('./Nick'),
     EditableButton = require('./EditableButton'),
     MessageList = require('./MessageList'),
@@ -42,6 +43,7 @@ module.exports = React.createClass({
         <EditableButton text={'#'+ this.state.active}
                         maxLength={20}
                         onChange={this.changeRoom} />
+        <Tabs />
         <MessageList messages={messages} />
 
         <div className="inputBar">
