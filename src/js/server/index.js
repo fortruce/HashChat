@@ -6,7 +6,8 @@ var express = require('express'),
     http = require('http').Server(app),
     io = require('socket.io')(http),
 
-    Events = require('../Events');
+    ServerMessage = require('./ServerMessage'),
+    Events = require('../Events'),
     Nicks = require('./nicks'),
     Rooms = require('./rooms');
 
@@ -51,12 +52,12 @@ function handler(io, socket) {
     log('nick', nick);
 
     if (nick.length > 16) {
-      socket.emit(Events.SERVER, 'nick too long (max: 16)');
+      socket.emit(Events.MESSAGE, new ServerMessage('nick too long (max: 16)'));
       return;
     }
 
     if (NickManager.exists(nick)) {
-      socket.emit(Events.SERVER, 'nick already taken');
+      socket.emit(Events.MESSAGE, new ServerMessage('nick already exists'));
       return;
     }
 

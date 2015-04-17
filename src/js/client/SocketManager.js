@@ -1,2 +1,2 @@
 var io = require('socket.io-client');
-module.exports = io(':3000');
+module.exports = io(':8080');

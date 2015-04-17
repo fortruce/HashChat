@@ -4,6 +4,5 @@ module.exports = {
   NICK: 'nick',
   CONNECTION: 'connection',
   JOIN: 'join',
-  LEAVE: 'leave',
-  SERVER: 'server'
+  LEAVE: 'leave'
 };
