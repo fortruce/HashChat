@@ -1,12 +1,12 @@
 var gulp = require('gulp'),
     browserify = require('browserify'),
     watchify = require('watchify'),
-    reactify = require('reactify'),
     source = require('vinyl-source-stream'),
     browserSync = require('browser-sync'),
     nodemon = require('gulp-nodemon'),
     rename = require('gulp-rename'),
     sass = require('gulp-sass'),
+    babelify = require('babelify'),
     reload = browserSync.reload;
 
 var path = {
@@ -65,7 +65,7 @@ gulp.task('server', ['watch'], function() {
 gulp.task('browserify', function() {
   var watcher = watchify(browserify({
     entries: [path.app],
-    transform: [reactify],
+    transform: [babelify],
     debug: true,
     cache: {}, packageCache: {}, fullPaths: true
   }));
