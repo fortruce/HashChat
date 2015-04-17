@@ -2,10 +2,11 @@ var React = require('react'),
     socket = require('./SocketManager'),
     Events = require('../Events'),
     MessageStore = require('./MessageStore'),
-    
+
+    Nick = require('./Nick'),
     EditableButton = require('./EditableButton'),
     MessageList = require('./MessageList'),
-    ChatInput = require('./ChatInput');
+    MessageInput = require('./MessageInput');
 
 module.exports = React.createClass({
   getInitialState: function() {
@@ -38,12 +39,15 @@ module.exports = React.createClass({
     var messages = MessageStore.getMessages(this.state.active);
     return (
       <div className="chatContainer">
-        <EditableButton text={this.state.active}
+        <EditableButton text={'#'+ this.state.active}
                         maxLength={20}
                         onChange={this.changeRoom} />
         <MessageList messages={messages} />
-        <ChatInput nick={this.state.nick}
-                   onMessageSubmit={this.onMessageSubmit} />
+
+        <div className="inputBar">
+          <Nick nick={this.state.nick} />
+          <MessageInput onMessageSubmit={this.onMessageSubmit} />
+        </div>
       </div>
     );
   },

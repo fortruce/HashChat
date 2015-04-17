@@ -32,17 +32,17 @@ body {
     }
 }
 
-.chatInput {
+.inputBar {
     display: flex;
     width: 100%;
     
-    &__message {
+    .messageInput  {
         margin-left: 10px;
         flex: 1 0;
         width: 100%;
     }
 
-    &__nick:after {
+    .nick:after {
         content: ": ";
     }
 }
