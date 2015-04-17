@@ -6,12 +6,13 @@ var express = require('express'),
     http = require('http').Server(app),
     io = require('socket.io')(http),
 
+    Events = require('../Events');
     Nicks = require('./nicks'),
     Rooms = require('./rooms');
 
 app.use(express.static(path.join(__dirname, '..', '..', '..', 'public')));
 
-io.on('connection', function(socket) {
+io.on(Events.CONNECTION, function(socket) {
   handler(io, socket);
 });
 
@@ -32,12 +33,12 @@ function handler(io, socket) {
 
   // generate a random nick for the new socket
   socket.nick = NickManager.randomNick(6);
-  socket.emit('nick', socket.nick);
+  socket.emit(Events.NICK, socket.nick);
 
   socket.RoomManager = new Rooms(socket);
 
   // leave all rooms
-  socket.on('disconnect', function() {
+  socket.on(Events.DISCONNECT, function() {
     log('disconnect');
     // remove the socket from all rooms
     socket.RoomManager.leaveAll();
@@ -46,16 +47,16 @@ function handler(io, socket) {
     NickManager.unregister(socket.nick);
   });
 
-  socket.on('nick', function(nick) {
+  socket.on(Events.NICK, function(nick) {
     log('nick', nick);
 
     if (nick.length > 16) {
-      socket.emit('server', 'nick too long (max: 16)');
+      socket.emit(Events.SERVER, 'nick too long (max: 16)');
       return;
     }
 
     if (NickManager.exists(nick)) {
-      socket.emit('server', 'nick already taken');
+      socket.emit(Events.SERVER, 'nick already taken');
       return;
     }
 
@@ -64,11 +65,11 @@ function handler(io, socket) {
 
     socket.nick = nick;
 
-    socket.emit('nick', socket.nick);
+    socket.emit(Events.NICK, socket.nick);
   });
 
   // forward chat events to the room they came from
-  socket.on('chat', function(message) {
+  socket.on(Events.MESSAGE, function(message) {
     log('chat','room:', message.room,
         'message:', message.message);
     
@@ -80,17 +81,17 @@ function handler(io, socket) {
     message.user = socket.nick;
     
     io.to(room)
-      .emit('chat', message);
+      .emit(Events.MESSAGE, message);
   });
 
   // join a new room
-  socket.on('join', function(room) {
+  socket.on(Events.JOIN, function(room) {
     log('join', room);
     socket.RoomManager.join(room);
   });
 
   // leave a room
-  socket.on('leave', function(room) {
+  socket.on(Events.LEAVE, function(room) {
     log('leave', room);
     RoomManger.leave(room);
   });

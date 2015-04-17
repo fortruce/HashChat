@@ -1,8 +1,8 @@
 var React = require('react/addons'),
-    io = require('socket.io-client'),
+    socket = require('./SocketManager'),
+    Events = require('../Events'),
+    MessageStore = require('./MessageStore'),
     crypto = require('crypto');
-
-var socket = io(':3000');
 
 // REMOVE - expose socket for debugging
 window.socket = socket;
@@ -72,7 +72,7 @@ var ChatInput = React.createClass({
   },
   nickChange: function(nick) {
     if (nick !== this.props.nick)
-      socket.emit('nick', nick);
+      socket.emit(Events.NICK, nick);
   },
   render: function() {
     return (
@@ -163,64 +163,34 @@ var EditableButton = React.createClass({
 });
 
 var ChatContainer = React.createClass({
-  addMessage: function(message) {
-    this.setState(function(pState) {
-      var room = message.room ? message.room : this.state.active;
-      var messages = React.addons.update(pState.rooms[room],
-                                         {$push: [message]});
-      var newRoom = {};
-      newRoom[room] = messages;
-      var newRooms = React.addons.update(pState.rooms,
-                                         {$merge: newRoom});
-      return {rooms: newRooms};
-    });
-  },
   getInitialState: function() {
-    socket.on('chat', function(message) {
-      this.addMessage(message);
-    }.bind(this));
-
-    socket.on('nick', function(nick) {
-      this.setState({nick: nick});
-    }.bind(this));
-
-    socket.on('server', function(event) {
-      var message = event.message;
-      if (typeof event == 'string' || event instanceof String)
-        message = event;
-
-      this.addMessage({user: 'server',
-                       message: message});
-    }.bind(this));
-        
     return {active: 'general',
             nick: '',
-            rooms: {'general': []}};
+            messages: MessageStore.getAll()};
   },
   componentDidMount: function() {
-    socket.emit('join', this.state.active);
+    // join general room
+    socket.emit(Events.JOIN, this.state.active);
+
+    // register listeners
+    MessageStore.addChangeListener(this._onChange);
+    socket.on(Events.NICK, this._onNick);
   },
   onMessageSubmit: function(message) {
-    socket.emit('chat', {room: this.state.active,
-                         message: message.message});
+    socket.emit(Events.MESSAGE, {room: this.state.active,
+                                 message: message.message});
+  },
+  componentWillUnmount: function() {
+    MessageStore.removeChangeListener(this._onChange);
+    socket.removeListener(Events.NICK, this._onNick);
   },
   changeRoom: function(room) {
-    if (this.state.rooms[room]) {
-      this.setState({active: room});
-      return;
-    }
+    socket.emit(Events.JOIN, room);
 
-    socket.emit('join', room);
-    
-    var newRoom = {[room]: []};
-
-    var newRooms = React.addons.update(this.state.rooms,
-                                       {$merge: newRoom});
-    this.setState({rooms: newRooms,
-                  active: room});
+    this.setState({active: room});
   },
   render: function() {
-    var messages = this.state.rooms[this.state.active];
+    var messages = MessageStore.getMessages(this.state.active);
     return (
       <div className="chatContainer">
         <EditableButton text={this.state.active}
@@ -231,6 +201,12 @@ var ChatContainer = React.createClass({
                    onMessageSubmit={this.onMessageSubmit} />
       </div>
     );
+  },
+  _onChange: function() {
+    this.setState({messages: MessageStore.getAll()});
+  },
+  _onNick: function(nick) {
+    this.setState({nick: nick});
   }
 });
 

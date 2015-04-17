@@ -1,3 +1,5 @@
+var Events = require('../Events');
+
 function Rooms(socket) {
   this.socket = socket;
   this.rooms = Object.create(null);
@@ -15,9 +17,9 @@ Rooms.prototype.join = function(room) {
 
   // send joined events to room and client
   this.socket.to(room)
-        .emit('server', joined);
+        .emit(Events.SERVER, joined);
   
-  this.socket.emit('server', joined);
+  this.socket.emit(Events.SERVER, joined);
 }
 
 Rooms.prototype.exists = function(room) {
@@ -40,8 +42,8 @@ Rooms.prototype.leave = function(room) {
 
   // send leave events to room and client
   this.socket.to(room)
-        .emit('server', left);
-  this.socket.emit('server', left);
+        .emit(Events.SERVER, left);
+  this.socket.emit(Events.SERVER, left);
   
   this.socket.leave(room);
 }
