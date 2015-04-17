@@ -21,17 +21,13 @@ function add(message) {
   }
 }
 
-function messages(room) {
-  return _messages[room] || [];
-}
-
 var MessageStore = assign({}, EventEmitter.prototype, {
   getAll: function() {
     return _messages;
   },
 
   getMessages: function(room) {
-    return messages(room);
+    return _messages[room] || [];
   },
 
   emitChange: function() {
@@ -44,6 +40,15 @@ var MessageStore = assign({}, EventEmitter.prototype, {
 
   removeChangeListener: function(callback) {
     this.removeListener(CHANGE_EVENT, callback);
+  },
+
+  leave: function(room) {
+    delete _messages[room];
+    this.emitChange();
+  },
+
+  rooms: function() {
+    return Object.keys(_messages);
   }
 });
 

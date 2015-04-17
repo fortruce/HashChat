@@ -45,12 +45,23 @@ body {
     .nick:after {
         content: ": ";
     }
+
+    .editableButton {
+        flex: 0 0 $user-width;
+        input, button {
+            text-align: center;
+            width: 100%;
+        }
+    }
 }
 
-.editableButton {
-    flex: 0 0 $user-width;
-    input, button {
-        text-align: center;
-        width: 100%;
+.tabs {
+    display: block;
+
+    button {
+        float: left;
     }
+    button:before {
+        content: "#";
+    }              
 }

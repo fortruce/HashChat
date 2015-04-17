@@ -31,19 +31,14 @@ module.exports = React.createClass({
     MessageStore.removeChangeListener(this._onChange);
     socket.removeListener(Events.NICK, this._onNick);
   },
-  changeRoom: function(room) {
-    socket.emit(Events.JOIN, room);
-
-    this.setState({active: room});
-  },
   render: function() {
     var messages = MessageStore.getMessages(this.state.active);
     return (
       <div className="chatContainer">
-        <EditableButton text={'#'+ this.state.active}
-                        maxLength={20}
-                        onChange={this.changeRoom} />
-        <Tabs />
+        <Tabs tabs={MessageStore.rooms()}
+              active={this.state.active}
+              onAdd={this._addTab}
+              onActivate={this._activateTab} />
         <MessageList messages={messages} />
 
         <div className="inputBar">
@@ -52,6 +47,14 @@ module.exports = React.createClass({
         </div>
       </div>
     );
+  },
+  _addTab: function(room) {
+    socket.emit(Events.JOIN, room);
+
+    this.setState({active: room});
+  },
+  _activateTab: function(tab) {
+    this.setState({active: tab});
   },
   _onChange: function() {
     this.setState({messages: MessageStore.getAll()});
