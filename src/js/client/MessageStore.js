@@ -3,7 +3,7 @@ var EventEmitter = require('events').EventEmitter,
     Events = require('../Events'),
     socket = require('./SocketManager');
 
-var CHANGE_EVENT = 'change'
+var CHANGE_EVENT = 'change';
 
 var _messages = Object.create(null);
 

@@ -96,4 +96,4 @@ function handler(io, socket) {
     log('leave', room);
     RoomManger.leave(room);
   });
-};
+}

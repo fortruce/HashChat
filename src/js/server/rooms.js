@@ -21,16 +21,16 @@ Rooms.prototype.join = function(room) {
         .emit(Events.MESSAGE, joined);
   
   this.socket.emit(Events.MESSAGE, joined);
-}
+};
 
 Rooms.prototype.exists = function(room) {
   return this.rooms[room];
-}
+};
 
 Rooms.prototype.leaveAll = function() {
   for (var room in this.rooms)
     this.leave(room);
-}
+};
 
 Rooms.prototype.leave = function(room) {
   if (!this.exists(room))
@@ -47,6 +47,6 @@ Rooms.prototype.leave = function(room) {
   this.socket.emit(Events.MESSAGE, left);
   
   this.socket.leave(room);
-}
+};
 
 module.exports = Rooms;
