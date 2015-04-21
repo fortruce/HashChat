@@ -1,15 +1,20 @@
-var express = require('express'),
+var babel = require('babel/register')
+    express = require('express'),
     path = require('path'),
     url = require('url'),
 
-    app = express(),
-    http = require('http').Server(app),
-    io = require('socket.io')(http),
+    app = require('./app'),
+    pubsub = require('./PubSub'),
 
     ServerMessage = require('./ServerMessage'),
     Events = require('../Events'),
-    Nicks = require('./nicks'),
+    NickManager = require('./NickManager'),
+    RO = require('./RoomManager'),
     Rooms = require('./rooms');
+
+var io = app.io;
+var http = app.http;
+var app = app.app;
 
 app.use(express.static(path.join(__dirname, '..', '..', '..', 'public')));
 
@@ -20,8 +25,6 @@ io.on(Events.CONNECTION, function(socket) {
 http.listen(8080, function() {
   console.log('server listening on *:8080');
 });
-
-var NickManager = new Nicks();
 
 function handler(io, socket) {
   function log() {
@@ -51,18 +54,15 @@ function handler(io, socket) {
   socket.on(Events.NICK, function(nick) {
     log('nick', nick);
 
-    if (nick.length > 16) {
-      socket.emit(Events.MESSAGE, new ServerMessage('nick too long (max: 16)'));
+    var NickValid = NickManager.change(socket.nick, nick);
+    if (nickSuccess !== true) {
+      socket.emit(Events.MESSAGE, new ServerMessage(nickValid));
       return;
     }
 
-    if (NickManager.exists(nick)) {
-      socket.emit(Events.MESSAGE, new ServerMessage('nick already exists'));
-      return;
-    }
-
-    NickManager.unregister(socket.nick);
-    NickManager.register(nick);
+    // alert the roommanger of a nick change HACK
+    RO.joinRoom(nick);
+    RO.leaveRoom(socket.nick);
 
     socket.nick = nick;
 
@@ -89,11 +89,27 @@ function handler(io, socket) {
   socket.on(Events.JOIN, function(room) {
     log('join', room);
     socket.RoomManager.join(room);
+    RO.joinRoom(socket.nick, room);
   });
 
   // leave a room
   socket.on(Events.LEAVE, function(room) {
     log('leave', room);
     RoomManger.leave(room);
+    RO.leaveRoom(socket.nick, room);
   });
+
+  for (var key in Events) {
+    // Register forwarding of socket Events to pubsub
+    if (Events.hasOwnProperty(key)) {
+      var ev = Events[key];
+      socket.on(ev, (function (event) {
+        return function () {
+          var args = Array.prototype.slice.call(arguments, 0);
+          args.unshift(event);
+          pubsub.publish.apply(pubsub, args);
+        };
+      })(ev));
+    }
+  }
 }

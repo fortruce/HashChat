@@ -21,20 +21,26 @@ function removeTag(tag) {
 }
 
 var TwitManager = assign({}, EventEmitter.prototype, {
-  subscribe: function (tag, callback) {
+  trackTag: function(tag) {
     if (hashtags.indexOf(tag) === -1) {
       addTag(tag);
     }
+  },
 
+  untrackTag: function(tag) {
+    if (!this.listeners(tag).length) {
+      removeTag(tag);
+    }
+  },
+
+  subscribe: function (tag, callback) {
+    this.trackTag(tag);
     this.on(tag, callback);
   },
 
   unsubscribe: function (tag, callback) {
     this.removeListener(tag, callback);
-
-    if (!this.listeners(tag).length) {
-      removeTag(tag);
-    }
+    this.untrackTag(tag);
   },
 
   emitTag: function (tag, statuses) {
