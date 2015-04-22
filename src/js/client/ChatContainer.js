@@ -25,7 +25,7 @@ module.exports = React.createClass({
   },
   onMessageSubmit: function(message) {
     socket.emit(Events.MESSAGE, new Events.Message(this.state.active,
-                                                   message.message));
+                              message.message));
   },
   componentWillUnmount: function() {
     MessageStore.removeChangeListener(this._onChange);

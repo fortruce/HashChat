@@ -8,9 +8,9 @@ var babel = require('babel/register'),
     io = require('socket.io')(http),
 
     pubsub = require('./PubSub'),
+    assign = require('object-assign'),
 
     TwitterManager = require('./TwitterManager'),
-    ServerMessage = require('./ServerMessage'),
     Events = require('../Events'),
     NickManager = require('./NickManager'),
     RoomManager = require('./RoomManager');
@@ -39,8 +39,9 @@ function handler(io, socket) {
   function publishEvent(event) {
     return function (o) {
       if (typeof o !== 'object')
-        o = {};
-      o.socket = socket;
+        o = {socket: socket};
+      else
+        o = assign({socket: socket}, o);
       pubsub.publish(event, o);
     };
   }
@@ -64,9 +65,9 @@ function handler(io, socket) {
   socket.on(Events.NICK, function(nick) {
     nick = nick.nick;
 
-    var NickValid = NickManager.change(socket.nick, nick);
+    var nickSuccess = NickManager.change(socket.nick, nick);
     if (nickSuccess !== true) {
-      socket.emit(Events.MESSAGE, new ServerMessage(nickValid));
+      socket.emit(Events.MESSAGE, new Events.Message(true, nickSuccess, 'Server'));
       return;
     }
 
@@ -79,7 +80,7 @@ function handler(io, socket) {
   socket.on(Events.MESSAGE, function(message) {
     var room = message.room;
 
-    message.user = socket.nick;
+    message.user = 'test';
 
     io.to(room)
       .emit(Events.MESSAGE, message);

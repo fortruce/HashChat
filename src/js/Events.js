@@ -10,9 +10,9 @@ module.exports = {
   },
 
   // Events provided by Client | Server
-  // Events will be augmented with {user, socket}
-  MESSAGE: 'message', // {room, message}
-  NICK: 'nick',       // {nick}
+  // Events will be augmented with {socket}
+  MESSAGE: 'message', // {room, message} | {room, message, user}
+  NICK: 'nick',       // {nick} | {nick}
   JOIN: 'join',       // {room}
   LEAVE: 'leave',      // {room}
   ROOM_CREATE: 'room/create', // {room}
