@@ -61,7 +61,7 @@ function init (pubsub, io) {
         if (tagIndex[tag].since_id) {
           // only emit if we know we have new tweets (since_id has been initialized)
           statuses.map((status) => {
-            io.to(tag).emit(Events.MESSAGE, new Events.Message(tag, status.text, 'Twitter'));
+            io.to(tag).emit(Events.client.MESSAGE, new Events.Message(tag, status.text, 'Twitter'));
           });
         }
 

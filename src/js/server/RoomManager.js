@@ -22,9 +22,9 @@ function init(pubsub) {
       return;
 
     socket.join(room);
-    socket.to(room).emit(Events.MESSAGE, new Events.Message(room,
+    socket.to(room).emit(Events.client.MESSAGE, new Events.Message(room,
                                       socket.id + ' joined room', 'Server'));
-    socket.emit(Events.MESSAGE, new Events.Message(room,
+    socket.emit(Events.client.MESSAGE, new Events.Message(room,
                                       'you joined ' + room, 'Server'));
     rooms[room].ids[socket.id] = true;
     rooms[room].count++;
@@ -36,7 +36,7 @@ function init(pubsub) {
       return;
 
     if (rooms[room].ids[socket.id]) {
-      socket.to(room).emit(Events.MESSAGE, new Events.Message(room,
+      socket.to(room).emit(Events.client.MESSAGE, new Events.Message(room,
                                                 socket.id + ' left room', 'Server'));
       socket.leave(room);
       rooms[room].ids[socket.id] = undefined;
@@ -63,9 +63,9 @@ function init(pubsub) {
   }
 
   console.log('[RoomManager]: init');
-  pubsub.subscribe(Events.JOIN, (o) => join(o.socket, o.room));
-  pubsub.subscribe(Events.LEAVE, (o) => leave(o.socket, o.room));
-  pubsub.subscribe(Events.DISCONNECT, (o) => disconnect(o.socket));
+  pubsub.subscribe(Events.client.JOIN, (o) => join(o.socket, o.room));
+  pubsub.subscribe(Events.client.LEAVE, (o) => leave(o.socket, o.room));
+  pubsub.subscribe(Events.client.DISCONNECT, (o) => disconnect(o.socket));
 }
 
 var RoomManager = {

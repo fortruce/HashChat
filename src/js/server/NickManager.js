@@ -1,6 +1,6 @@
 var crypto = require('crypto');
 
-var nicks = Object.create(null);
+var nicks = {};
 
 function randomNick(n) {
   var nick;
@@ -12,6 +12,11 @@ function randomNick(n) {
 
   register(nick);
   return nick;
+}
+
+function init (pubsub) {
+  pubsub.subscribe(Events.client.NICK, (o) => register(o.socket, o.nick));
+  pubsub.subscribe(Events.client.DISCONNECT, (o) => unregister(o.socket, o.nick));
 }
 
 function exists(nick) {
@@ -26,7 +31,7 @@ function register(nick) {
     return 'nick must be between 1 and 16 characters';
   }
 
-  return nicks[nick] = true;
+  nicks[nick] = true;
 }
 
 function unregister(nick) {

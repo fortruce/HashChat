@@ -1,3 +1,4 @@
+'use strict';
 var babel = require('babel/register'),
     express = require('express'),
     path = require('path'),
@@ -34,7 +35,7 @@ http.listen(8080, function() {
 function handler(io, socket) {
   // generate a random nick for the new socket
   socket.nick = NickManager.randomNick(6);
-  socket.emit(Events.NICK, socket.nick);
+  socket.emit(Events.client.NICK, socket.nick);
 
   function publishEvent(event) {
     return function (o) {
@@ -47,42 +48,42 @@ function handler(io, socket) {
   }
 
   // Register forwarding of socket Events to pubsub
-  for (var key in Events) {
-    if (Events.hasOwnProperty(key)) {
+  for (var key in Events.client) {
+    if (Events.client.hasOwnProperty(key)) {
       // only register publishers Event strings
-      if (typeof Events[key] === 'string') {
-        var ev = Events[key];
+      var ev = Events.client[key];
+      if (typeof ev === 'string') {
         socket.on(ev, publishEvent(ev));
       }
     }
   }
 
   // leave all rooms
-  socket.on(Events.DISCONNECT, function() {
+  socket.on(Events.client.DISCONNECT, function() {
     NickManager.unregister(socket.nick);
   });
 
-  socket.on(Events.NICK, function(nick) {
+  socket.on(Events.client.NICK, function(nick) {
     nick = nick.nick;
 
     var nickSuccess = NickManager.change(socket.nick, nick);
     if (nickSuccess !== true) {
-      socket.emit(Events.MESSAGE, new Events.Message(true, nickSuccess, 'Server'));
+      socket.emit(Events.client.MESSAGE, new Events.Message(true, nickSuccess, 'Server'));
       return;
     }
 
     socket.nick = nick;
 
-    socket.emit(Events.NICK, socket.nick);
+    socket.emit(Events.client.NICK, socket.nick);
   });
 
   // forward chat events to the room they came from
-  socket.on(Events.MESSAGE, function(message) {
+  socket.on(Events.client.MESSAGE, function(message) {
     var room = message.room;
 
     message.user = 'test';
 
     io.to(room)
-      .emit(Events.MESSAGE, message);
+      .emit(Events.client.MESSAGE, message);
   });
 }
