@@ -14,6 +14,6 @@ module.exports = React.createClass({
     },
     _onChange(nick) {
         if (nick !== this.props.nick)
-            socket.emit(Events.NICK, nick);
+            socket.emit(Events.NICK, new Events.Nick(nick));
     }
 });

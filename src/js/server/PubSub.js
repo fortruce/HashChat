@@ -2,9 +2,9 @@ var EventEmitter = require('events').EventEmitter,
 	assign = require('object-assign');
 
 var pubsub = assign({}, EventEmitter.prototype, {
-	publish: function () {
-		console.log.apply(console, arguments);
-		this.emit.apply(this, arguments);
+	publish: function (event, o) {
+    console.log('{', event, '}', o.socket ? o.socket.id : o);
+		this.emit(event, o);
 	},
 
 	subscribe: function(event, callback) {

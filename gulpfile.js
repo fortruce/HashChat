@@ -2,7 +2,7 @@ var gulp = require('gulp'),
     browserify = require('browserify'),
     watchify = require('watchify'),
     source = require('vinyl-source-stream'),
-    browserSync = require('browser-sync'),
+    browserSync = require('browser-sync').create(),
     nodemon = require('gulp-nodemon'),
     rename = require('gulp-rename'),
     sass = require('gulp-sass'),
@@ -31,8 +31,8 @@ gulp.task('static', ['copyHtml', 'sass']);
 
 // proxy requests thru browser-sync for reloads
 gulp.task('browser-sync', ['server'], function() {
-  browserSync({
-    proxy: "localhost:8080"
+  browserSync.init({
+    proxy: "hashchat.dev:8080"
   });
 });
 

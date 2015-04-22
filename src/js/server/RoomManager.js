@@ -1,52 +1,75 @@
-var TwitManager = require('./TwitManager'),
-    socket = require('./index'),
-    Events = require('../Events'),
-    io = require('./app').io;
+var Events = require('../Events');
 
 var rooms = {};
 
-function join(user, room) {
-	if (!rooms[room]) {
-    // room is being joined for the first time
-		rooms[room] = {users: {}, count: 0};
+/**
+ * Subscribe to interested events over pubsub channel.
+ * @param  {EventEmitter} pubsub The publish/subscribe channel.
+ */
+function init(pubsub) {
 
-    console.log('RoomManager:', 'subscribing to [', room, ']');
-    rooms[room].callback = TwitManager.subscribe(room, function (tweets) {
-      tweets.reverse();
-      console.log('RoomManager: received [', tweets.length, '] tweets');
-      tweets.map((tweet) => io.to(room).emit(Events.MESSAGE, {
-        room: room,
-        message: tweet.text,
-        user: 'Twitter'
-      }));
-    });
+  function join(socket, room) {
+    console.log('[RoomManager]: join(', socket.id, room, ')');
+    if (!rooms[room]) {
+      // create the room and publish room created event
+      rooms[room] = {ids: {},
+                     count: 0};
+      pubsub.publish(Events.ROOM_CREATE, new Events.RoomCreate(room));
+    }
+
+    // socket already in room
+    if (rooms[room].ids[socket.id])
+      return;
+
+    socket.join(room);
+    socket.to(room).emit(Events.MESSAGE, new Events.Message(room,
+                                      socket.id + ' joined room', 'Server'));
+    socket.emit(Events.MESSAGE, new Events.Message(room,
+                                      'you joined ' + room, 'Server'));
+    rooms[room].ids[socket.id] = true;
+    rooms[room].count++;
   }
 
-	rooms[room].users[user] = true;
-  rooms[room].count++;
-}
+  function leave(socket, room) {
+    console.log('[RoomManager]: leave(', socket.id, room, ')');
+    if (!rooms[room])
+      return;
 
-function leave(user, room) {
-	if (!rooms[room])
-		return;
+    if (rooms[room].ids[socket.id]) {
+      socket.to(room).emit(Events.MESSAGE, new Events.Message(room,
+                                                socket.id + ' left room', 'Server'));
+      socket.leave(room);
+      rooms[room].ids[socket.id] = undefined;
+      rooms[room].count--;
 
-	rooms[room].users[user] = undefined;
-  rooms[room].count--;
-  if (!rooms[room].count) {
-    // empty room, unsub and destroy
-    TwitManager.unsubscribe(room, rooms[room].callback);
-    delete rooms[room];
+      if (rooms[room].count <= 0) {
+        pubsub.publish(Events.ROOM_DESTROY, new Events.RoomDestroy(room));
+        delete rooms[room];
+      }
+    }
   }
+
+  function disconnect(socket) {
+    // leave all rooms
+    console.log('[RoomManager]: disconnect(', socket.id, ')');
+    socket.leaveAll();
+
+    for (var room in rooms) {
+      if (rooms.hasOwnProperty(room)) {
+        if (rooms[room].ids[socket.id])
+          leave(socket, room);
+      }
+    }
+  }
+
+  console.log('[RoomManager]: init');
+  pubsub.subscribe(Events.JOIN, (o) => join(o.socket, o.room));
+  pubsub.subscribe(Events.LEAVE, (o) => leave(o.socket, o.room));
+  pubsub.subscribe(Events.DISCONNECT, (o) => disconnect(o.socket));
 }
 
 var RoomManager = {
-	joinRoom(user, room) {
-		join(user, room);
-	},
-
-	leaveRoom(user, room) {
-		leave(user, room);
-	}
-}
+  init: init
+};
 
 module.exports = RoomManager;

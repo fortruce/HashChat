@@ -17,15 +17,15 @@ module.exports = React.createClass({
   },
   componentDidMount: function() {
     // join general room
-    socket.emit(Events.JOIN, this.state.active);
+    socket.emit(Events.JOIN, new Events.Join(this.state.active));
 
     // register listeners
     MessageStore.addChangeListener(this._onChange);
     socket.on(Events.NICK, this._onNick);
   },
   onMessageSubmit: function(message) {
-    socket.emit(Events.MESSAGE, {room: this.state.active,
-                                 message: message.message});
+    socket.emit(Events.MESSAGE, new Events.Message(this.state.active,
+                                                   message.message));
   },
   componentWillUnmount: function() {
     MessageStore.removeChangeListener(this._onChange);
@@ -49,7 +49,7 @@ module.exports = React.createClass({
     );
   },
   _addTab: function(room) {
-    socket.emit(Events.JOIN, room);
+    socket.emit(Events.JOIN, new Events.Join(room));
 
     this.setState({active: room});
   },
