@@ -1,4 +1,5 @@
-var crypto = require('crypto');
+var crypto = require('crypto'),
+    Events = require('../Events');
 
 var RANDOM_NICK_LEN = 6;
 var MAX_NICK_LEN = 16;
@@ -13,73 +14,73 @@ function randomNick(n) {
     nick = 'user' + crypto.randomBytes(Math.ceil(n/2))
         .toString('hex')
         .slice(0, n);
-  } while (exists(nick));
+  } while (nicks[nick]);
 
-  register(nick);
   return nick;
 }
 
-function register(socket, nick) {
-  var errMessage;
-  if (nicks[nick]) {
-    errMessage = 'That nick is already in use!';
-  }
-  if (nick.length > MAX_NICK_LEN || nick.length < MIN_NICK_LEN) {
-    errMessage = 'nick must be between ' + MIN_NICK_LEN + ' and ' + MAX_NICK_LEN + ' characters long';
-  }
-  if (errMessage) {
-    return socket.emit(Events.MESSAGE, new Events.Message(true, errMessage, 'Server'));
-  }
-
-  if (sockets[socket.id] === nick)
-    return;
-
-  // if the socket currently holds a nick, unregister old nick
-  if (sockets[socket.id])
-    unregister(socket.id);
-  else
-    console.error('socket without a nick!');
-
+function setNick(socketid, nick) {
+  sockets[socketid] = nick;
   nicks[nick] = true;
-  sockets[socket.id] = nick;
 }
 
-function unregister(socketid) {
+function unsetNick(socketid) {
   var nick = sockets[socketid];
-  if (nick) {
-    nicks[nick] = undefined;
-    sockets[socketid] = undefined;
-  }
+  nicks[nick] = undefined;
+  sockets[socketid] = undefined;
+}
+
+function initNick(socket) {
+  var nick = randomNick(RANDOM_NICK_LEN);
+  setNick(socket.id, nick);
+  socket.emit(Events.client.NICK, new Events.Nick(nick));
+}
+
+function isInvalid(nick) {
+  if (nicks[nick])
+    return 'Nick is already taken.';
+  if (nick.length > MAX_NICK_LEN || nick.length < MIN_NICK_LEN)
+    return 'Nick must be between ' + MIN_NICK_LEN + ' and ' + MAX_NICK_LEN + ' characters';
+  return false;
+}
+
+function nick(socketid) {
+  var n = sockets[socketid];
+  if (n)
+    return n;
+  throw new Error('Requested nick for socket without a nick');
 }
 
 function init (pubsub) {
-  pubsub.subscribe(Events.client.NICK, (o) => register(o.socket, o.nick));
-  pubsub.subscribe(Events.client.DISCONNECT, (o) => unregister(o.socket));
-  // on connect assign the socket a random unique nick
-  pubsub.subscribe(Events.CONNECT, (o) => register(o.socket, randomNick(RANDOM_NICK_LEN)));
-}
+  /**
+   * Register the Nick with this Socket.
+   * @param  {Socket} socket The socket corresponding to the nick.
+   * @param  {String} nick   The new nick.
+   */
+  function changeNick(socket, nick) {
+    if (sockets[socket.id] === nick)
+      return;
 
-function exists(nick) {
-  return nicks[nick];
-}
+    // Validate the nickname and emit message if invalid
+    var invalid = isInvalid(nick);
+    if (invalid)
+      return socket.emit(Events.Message, new Events.Message(true, invalid, 'Server'));
 
+    var oldNick = sockets[socket.id];
+    unsetNick(socket.id);
+    setNick(socket.id, nick);
 
-
-function unregister(nick) {
-  nicks[nick] = false;
-}
-
-function change(oldNick, newNick) {
-  var nickValid = reigster(newNick);
-  if (nickValid === true) {
-    unregister(oldNick);
-    return;
+    socket.emit(Events.client.NICK, new Events.Nick(nick));
+    pubsub.publish(Events.NICK_CHANGE, new Events.NickChange(socket, oldNick, nick));
   }
-  return nickValid;
+
+  pubsub.subscribe(Events.client.NICK, (o) => changeNick(o.socket, o.nick));
+  pubsub.subscribe(Events.client.DISCONNECT, (o) => unsetNick(o.socket.id));
+  // on connect assign the socket a random unique nick
+  pubsub.subscribe(Events.CONNECT, (o) => initNick(o.socket));
 }
 
 module.exports = {
-  randomNick: randomNick,
-  unregister: unregister,
-  change: change
+  init,
+  nick
 };

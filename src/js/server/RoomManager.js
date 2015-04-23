@@ -49,23 +49,35 @@ function init(pubsub) {
     }
   }
 
+  function forAllRooms(socket, cb) {
+    for (var room in rooms) {
+      if (rooms.hasOwnProperty(room)) {
+        if (rooms[room].ids[socket.id]) {
+          cb(room);
+        }
+      }
+    }
+  }
+
   function disconnect(socket) {
     // leave all rooms
     console.log('[RoomManager]: disconnect(', socket.id, ')');
     socket.leaveAll();
 
-    for (var room in rooms) {
-      if (rooms.hasOwnProperty(room)) {
-        if (rooms[room].ids[socket.id])
-          leave(socket, room);
-      }
-    }
+    forAllRooms(socket, (r) => leave(socket, r));
   }
 
   console.log('[RoomManager]: init');
   pubsub.subscribe(Events.client.JOIN, (o) => join(o.socket, o.room));
   pubsub.subscribe(Events.client.LEAVE, (o) => leave(o.socket, o.room));
   pubsub.subscribe(Events.client.DISCONNECT, (o) => disconnect(o.socket));
+  pubsub.subscribe(Events.NICK_CHANGE, (o) => {
+    var message = o.oldNick + ' is now known as ' + o.newNick;
+    forAllRooms(o.socket, (r) => {
+      o.socket.to(r).emit(Events.client.MESSAGE,
+                        new Events.Message(r, message, 'Server'));
+    });
+  });
 }
 
 var RoomManager = {

@@ -24,6 +24,7 @@ module.exports = {
   ROOM_CREATE: 'room/create', // {room}
   ROOM_DESTROY: 'room/destroy', // {room}
   CONNECT: 'connect', // {socket}
+  NICK_CHANGE: 'nick/change',
 
   // Event helper constructors - using these allows easier updating
   // of event contracts
@@ -52,5 +53,11 @@ module.exports = {
 
   RoomDestroy(room) {
     this.room = room;
+  },
+
+  NickChange(socket, oldNick, newNick) {
+    this.socket = socket;
+    this.oldNick = oldNick;
+    this.newNick = newNick;
   }
 };
