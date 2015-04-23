@@ -25,7 +25,6 @@ module.exports = React.createClass({
   },
   valid: function() {
     var t = React.findDOMNode(this.refs.input).value.trim();
-    console.log('valid:', this.props.validator(t));
     return this.props.validator(t);
   },
   commitEdit: function() {
