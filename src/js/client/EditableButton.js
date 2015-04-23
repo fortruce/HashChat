@@ -14,7 +14,7 @@ module.exports = React.createClass({
     // revert input if edited value is not valid
     if (this.state.editing && !this.valid())
       this.setState({editing: e, text: this.props.text});
-    
+
     this.setState({editing: e});
   },
   onChange: function(e) {
@@ -57,7 +57,7 @@ module.exports = React.createClass({
   render: function() {
     var styles = this.state.editing ? [{}, {display: 'none'}] :
                                       [{display: 'none'}, {}];
-    
+
     return (
       <div className="editableButton">
        <button onClick={this.toggleEditing}
