@@ -52,7 +52,7 @@ var MessageStore = assign({}, EventEmitter.prototype, {
   }
 });
 
-socket.on(Events.client.MESSAGE, function(message) {
+socket.on(Events.server.MESSAGE, function(message) {
   add(message);
   MessageStore.emitChange();
 });

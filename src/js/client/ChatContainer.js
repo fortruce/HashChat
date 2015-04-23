@@ -7,7 +7,8 @@ var React = require('react'),
     Nick = require('./Nick'),
     EditableButton = require('./EditableButton'),
     MessageList = require('./MessageList'),
-    MessageInput = require('./MessageInput');
+    MessageInput = require('./MessageInput'),
+    isValidRoom = require('../Validators').room;
 
 module.exports = React.createClass({
   getInitialState() {
@@ -19,19 +20,19 @@ module.exports = React.createClass({
   componentDidMount() {
     // register listeners
     MessageStore.addChangeListener(this._onChange);
-    socket.on(Events.client.NICK, (o) => this._onNick(o.nick));
+    socket.on(Events.server.NICK, this._onNick);
 
-    socket.emit(Events.client.JOIN, new Events.Join(this.state.active));
+    socket.emit(Events.client.JOIN, new Events.client.Join(this.state.active));
   },
 
   onMessageSubmit(message) {
-    socket.emit(Events.client.MESSAGE, new Events.Message(this.state.active,
+    socket.emit(Events.client.MESSAGE, new Events.client.Message(this.state.active,
                               message.message));
   },
 
   componentWillUnmount() {
     MessageStore.removeChangeListener(this._onChange);
-    socket.removeListener(Events.client.NICK, this._onNick);
+    socket.removeListener(Events.server.NICK, this._onNick);
   },
 
   render() {
@@ -39,6 +40,7 @@ module.exports = React.createClass({
     return (
       <div className="chatContainer">
         <Tabs tabs={MessageStore.rooms()}
+              validator={isValidRoom}
               active={this.state.active}
               onAdd={this._addTab}
               onActivate={this._activateTab} />
@@ -53,8 +55,9 @@ module.exports = React.createClass({
   },
 
   _addTab(room) {
-    socket.emit(Events.client.JOIN, new Events.Join(room));
+    socket.emit(Events.client.JOIN, new Events.client.Join(room));
 
+    console.log('setting state to ', room);
     this.setState({active: room});
   },
   _activateTab(tab) {
@@ -63,7 +66,7 @@ module.exports = React.createClass({
   _onChange() {
     this.setState({messages: MessageStore.getAll()});
   },
-  _onNick(nick) {
-    this.setState({nick: nick});
+  _onNick(o) {
+    this.setState({nick: o.nick});
   }
 });

@@ -1,4 +1,5 @@
-var Events = require('../Events');
+var Events = require('../Events'),
+    isValid = require('../Validators').room;
 
 var rooms = {};
 
@@ -10,11 +11,15 @@ function init(pubsub) {
 
   function join(socket, room) {
     console.log('[RoomManager]: join(', socket.id, room, ')');
+
+    if (!isValid(room))
+      return;
+
     if (!rooms[room]) {
       // create the room and publish room created event
       rooms[room] = {ids: {},
                      count: 0};
-      pubsub.publish(Events.ROOM_CREATE, new Events.RoomCreate(room));
+      pubsub.publish(Events.internal.ROOM_CREATE, new Events.internal.RoomCreate(room));
     }
 
     // socket already in room
@@ -22,10 +27,10 @@ function init(pubsub) {
       return;
 
     socket.join(room);
-    socket.to(room).emit(Events.client.MESSAGE, new Events.Message(room,
-                                      socket.id + ' joined room', 'Server'));
-    socket.emit(Events.client.MESSAGE, new Events.Message(room,
-                                      'you joined ' + room, 'Server'));
+    socket.to(room).emit(Events.server.MESSAGE, new Events.server.Message(room,
+                                      socket.id + ' joined room'));
+    socket.emit(Events.server.MESSAGE, new Events.server.Message(room,
+                                      'you joined ' + room));
     rooms[room].ids[socket.id] = true;
     rooms[room].count++;
   }
@@ -36,14 +41,14 @@ function init(pubsub) {
       return;
 
     if (rooms[room].ids[socket.id]) {
-      socket.to(room).emit(Events.client.MESSAGE, new Events.Message(room,
-                                                socket.id + ' left room', 'Server'));
+      socket.to(room).emit(Events.server.MESSAGE, new Events.server.Message(room,
+                                                socket.id + ' left room'));
       socket.leave(room);
       rooms[room].ids[socket.id] = undefined;
       rooms[room].count--;
 
       if (rooms[room].count <= 0) {
-        pubsub.publish(Events.ROOM_DESTROY, new Events.RoomDestroy(room));
+        pubsub.publish(Events.internal.ROOM_DESTROY, new Events.internal.RoomDestroy(room));
         delete rooms[room];
       }
     }
@@ -71,11 +76,11 @@ function init(pubsub) {
   pubsub.subscribe(Events.client.JOIN, (o) => join(o.socket, o.room));
   pubsub.subscribe(Events.client.LEAVE, (o) => leave(o.socket, o.room));
   pubsub.subscribe(Events.client.DISCONNECT, (o) => disconnect(o.socket));
-  pubsub.subscribe(Events.NICK_CHANGE, (o) => {
+  pubsub.subscribe(Events.internal.NICK_CHANGE, (o) => {
     var message = o.oldNick + ' is now known as ' + o.newNick;
     forAllRooms(o.socket, (r) => {
-      o.socket.to(r).emit(Events.client.MESSAGE,
-                        new Events.Message(r, message, 'Server'));
+      o.socket.to(r).emit(Events.server.MESSAGE,
+                        new Events.server.Message(r, message));
     });
   });
 }

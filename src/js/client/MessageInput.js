@@ -1,5 +1,4 @@
-var React = require('react'),
-    Events = require('../Events');
+var React = require('react');
 
 module.exports = React.createClass({
   handleSubmit: function(e) {

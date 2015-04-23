@@ -3,6 +3,7 @@ var React = require('react');
 module.exports = React.createClass({
   getInitialState: function() {
     return {editing: false,
+            valid: true,
             text: this.props.text};
   },
   componentWillReceiveProps: function(props) {
@@ -13,17 +14,19 @@ module.exports = React.createClass({
 
     // revert input if edited value is not valid
     if (this.state.editing && !this.valid())
-      this.setState({editing: e, text: this.props.text});
+      this.setState({editing: e, text: this.props.text, valid: true});
 
     this.setState({editing: e});
   },
   onChange: function(e) {
-    if (e.target.value.length <= this.props.maxLength)
-      this.setState({text: e.target.value.trim()});
+    var v = e.target.value.trim();
+    this.setState({text: v,
+                  valid: this.valid(v)});
   },
   valid: function() {
     var t = React.findDOMNode(this.refs.input).value.trim();
-    return t.length > 0 && t.length <= this.props.maxLength;
+    console.log('valid:', this.props.validator(t));
+    return this.props.validator(t);
   },
   commitEdit: function() {
     this.toggleEditing();
@@ -58,8 +61,10 @@ module.exports = React.createClass({
     var styles = this.state.editing ? [{}, {display: 'none'}] :
                                       [{display: 'none'}, {}];
 
+    var v = this.state.valid ? '' : 'invalid';
+
     return (
-      <div className="editableButton">
+      <div className={'editableButton ' + v}>
        <button onClick={this.toggleEditing}
                style={styles[1]}>
          {this.state.text}

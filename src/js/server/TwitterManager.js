@@ -34,8 +34,8 @@ function query(tag) {
 }
 
 function init (pubsub, io) {
-  pubsub.subscribe(Events.ROOM_CREATE, (o) => addTag(o.room));
-  pubsub.subscribe(Events.ROOM_DESTROY, (o) => removeTag(o.room));
+  pubsub.subscribe(Events.internal.ROOM_CREATE, (o) => addTag(o.room));
+  pubsub.subscribe(Events.internal.ROOM_DESTROY, (o) => removeTag(o.room));
 
   // query for new results for the tracked tags
   // emit the tags to the chatroom
@@ -61,7 +61,7 @@ function init (pubsub, io) {
         if (tagIndex[tag].since_id) {
           // only emit if we know we have new tweets (since_id has been initialized)
           statuses.map((status) => {
-            io.to(tag).emit(Events.client.MESSAGE, new Events.Message(tag, status.text, 'Twitter'));
+            io.to(tag).emit(Events.server.MESSAGE, new Events.server.Message(tag, status.text, 'Twitter'));
           });
         }
 

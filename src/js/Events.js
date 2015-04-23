@@ -10,54 +10,65 @@ module.exports = {
   },
 
   client: {
-    // Events provided by Client
+    // Events sent from the Client to the Server
     // Events will be augmented with {socket}
-    MESSAGE: 'message', // {room, message} | {room, message, user}
-    NICK: 'nick',       // {nick} | {nick}
-    JOIN: 'join',       // {room}
-    LEAVE: 'leave',      // {room}
-    DISCONNECT: 'disconnect', // {}
+    MESSAGE:    'client/message',     // {room, message}
+    NICK:       'client/nick',        // {nick} | {nick}
+    JOIN:       'client/join',        // {room}
+    LEAVE:      'client/leave',       // {room}
+    DISCONNECT: 'client/disconnect',  // {}
+
+    Join(room) {
+      this.room = room;
+    },
+    Leave(room) {
+      this.room = room;
+    },
+    Nick(nick) {
+      this.nick = nick;
+    },
+    Message(room, message) {
+      this.room = room;
+      this.message = message;
+    },
   },
 
-  // Events fired internally by various server components
-  // These events are not augmented with any additional info
-  ROOM_CREATE: 'room/create', // {room}
-  ROOM_DESTROY: 'room/destroy', // {room}
-  CONNECT: 'connect', // {socket}
-  NICK_CHANGE: 'nick/change',
+  server: {
+    // Events sent from the Server to the Client
+    MESSAGE:      'server/message',       // {[room], message, user}
+    NICK:         'server/nick',
 
-  // Event helper constructors - using these allows easier updating
-  // of event contracts
-  Join(room) {
-    this.room = room;
+    Nick(nick) {
+      this.nick = nick;
+    },
+    Message(room, message, user) {
+      this.room = room;
+      this.message = message;
+      this.user = user || 'Server';
+    }
   },
 
-  Leave(room) {
-    this.room = room;
-  },
+  internal: {
+    // Events fired internally by various server components
+    // These events are not augmented with any additional info
+    ROOM_CREATE:  'server/room/create',     // {room}
+    ROOM_DESTROY: 'server/room/destroy',    // {room}
+    CONNECT:      'server/connect',         // {socket}
+    NICK_CHANGE:  'server/nick/change',     // {socket, oldNick, newNick}
 
-  Nick(nick) {
-    this.nick = nick;
-  },
-
-  Message(room, message, user) {
-    this.room = room;
-    this.message = message;
-    if (user)
-      this.user = user;
-  },
-
-  RoomCreate(room) {
-    this.room = room;
-  },
-
-  RoomDestroy(room) {
-    this.room = room;
-  },
-
-  NickChange(socket, oldNick, newNick) {
-    this.socket = socket;
-    this.oldNick = oldNick;
-    this.newNick = newNick;
+    RoomCreate(room) {
+      this.room = room;
+    },
+    RoomDestroy(room) {
+      this.room = room;
+    },
+    NickChange(socket, oldNick, newNick) {
+      this.socket = socket;
+      this.oldNick = oldNick;
+      this.newNick = newNick;
+    },
+    Connect(socket) {
+      this.socket = socket;
+    }
   }
 };

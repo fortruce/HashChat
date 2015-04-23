@@ -14,7 +14,7 @@ module.exports = React.createClass({
                onClick={this._setActive}>
               {{tabs}}
               <EditableButton text=''
-                              maxLength={20}
+                              validator={this.props.validator}
                               onChange={this._onAdd} />
           </div>
       );
@@ -23,7 +23,6 @@ module.exports = React.createClass({
       this.props.onAdd(tab);
   },
   _setActive(e) {
-    console.log('set active');
     if (e.target && e.target.className.indexOf('tab') !== -1)
       this.props.onActivate(e.target.innerText);
   }

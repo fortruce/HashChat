@@ -14,7 +14,6 @@ var babel = require('babel/register'),
     NickManager = require('./NickManager'),
     RoomManager = require('./RoomManager');
 
-
 // Initialize Components
 RoomManager.init(pubsub);
 TwitterManager.init(pubsub, io);
@@ -25,7 +24,7 @@ app.use(express.static(path.join(__dirname, '..', '..', '..', 'public')));
 
 io.on(Events.socket.CONNECTION, function(socket) {
   // generate a random nick for the new socket
-  pubsub.publish(Events.CONNECT, {socket: socket});
+  pubsub.publish(Events.internal.CONNECT, new Events.internal.Connect(socket));
 
   function publishEvent(event) {
     return function (o) {
@@ -49,12 +48,10 @@ io.on(Events.socket.CONNECTION, function(socket) {
   }
 
   // forward chat events to the room they came from
-  socket.on(Events.client.MESSAGE, function(message) {
-    var room = message.room;
-
-    io.to(room)
-      .emit(Events.client.MESSAGE,
-        new Events.Message(room, message.message, NickManager.nick(socket.id)));
+  socket.on(Events.client.MESSAGE, function(o) {
+    io.to(o.room)
+      .emit(Events.server.MESSAGE,
+        new Events.server.Message(o.room, o.message, NickManager.nick(socket.id)));
   });
 });
 

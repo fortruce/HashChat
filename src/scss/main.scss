@@ -17,7 +17,7 @@ body {
     display: flex;
     content: "";
     clear: both;
-    
+
     &__user {
         flex: 0 0 $user-width;
         text-align: right;
@@ -35,7 +35,11 @@ body {
 .inputBar {
     display: flex;
     width: 100%;
-    
+
+    .invalid {
+        button, input { background-color: red; }
+    }
+
     .messageInput  {
         margin-left: 10px;
         flex: 1 0;
@@ -63,5 +67,5 @@ body {
     }
     button:before {
         content: "#";
-    }              
+    }
 }
