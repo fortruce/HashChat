@@ -6,9 +6,9 @@ module.exports = React.createClass({
     var key = e.keyCode || e.which;
     if (key !== 13)
       return;
-    
+
     var message = React.findDOMNode(this.refs.message).value.trim();
-    
+
     if (!message)
       return;
 
