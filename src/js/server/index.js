@@ -37,6 +37,8 @@ function handler(io, socket) {
   socket.nick = NickManager.randomNick(6);
   socket.emit(Events.client.NICK, socket.nick);
 
+  pubsub.publish(Events.CONNECT, {socket: socket});
+
   function publishEvent(event) {
     return function (o) {
       if (typeof o !== 'object')
