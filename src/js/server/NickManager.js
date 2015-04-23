@@ -52,11 +52,6 @@ function nick(socketid) {
 }
 
 function init (pubsub) {
-  /**
-   * Register the Nick with this Socket.
-   * @param  {Socket} socket The socket corresponding to the nick.
-   * @param  {String} nick   The new nick.
-   */
   function changeNick(socket, nick) {
     if (sockets[socket.id] === nick)
       return;
