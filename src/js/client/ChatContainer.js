@@ -11,8 +11,8 @@ var React = require('react'),
 
 module.exports = React.createClass({
   getInitialState() {
-    return {active: 'general',
-            nick: '',
+    return {active:   'hashchat',
+            nick:     '',
             messages: MessageStore.getAll()};
   },
 
@@ -21,7 +21,6 @@ module.exports = React.createClass({
     MessageStore.addChangeListener(this._onChange);
     socket.on(Events.client.NICK, (o) => this._onNick(o.nick));
 
-    // join general room
     socket.emit(Events.client.JOIN, new Events.Join(this.state.active));
   },
 
