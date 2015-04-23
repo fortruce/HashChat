@@ -7,8 +7,8 @@ function stringToColor(s) {
   for (var i = 0; i < s.length; i++) {
     hash = s.charCodeAt(i) + ((hash << 5) - hash);
   }
-  for (var i = 0, color = '#'; i < 3; i++) {
-    color += ('00' + ((hash >> i * 8) & 0xFF).toString(16))
+  for (var x = 0, color = '#'; x < 3; x++) {
+    color += ('00' + ((hash >> x * 8) & 0xFF).toString(16))
              .slice(-2);
   }
   return color;
