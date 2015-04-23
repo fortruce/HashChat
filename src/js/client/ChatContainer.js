@@ -10,28 +10,32 @@ var React = require('react'),
     MessageInput = require('./MessageInput');
 
 module.exports = React.createClass({
-  getInitialState: function() {
+  getInitialState() {
     return {active: 'general',
             nick: '',
             messages: MessageStore.getAll()};
   },
-  componentDidMount: function() {
-    // join general room
-    socket.emit(Events.client.JOIN, new Events.Join(this.state.active));
 
+  componentDidMount() {
     // register listeners
     MessageStore.addChangeListener(this._onChange);
-    socket.on(Events.client.NICK, this._onNick);
+    socket.on(Events.client.NICK, (o) => this._onNick(o.nick));
+
+    // join general room
+    socket.emit(Events.client.JOIN, new Events.Join(this.state.active));
   },
-  onMessageSubmit: function(message) {
+
+  onMessageSubmit(message) {
     socket.emit(Events.client.MESSAGE, new Events.Message(this.state.active,
                               message.message));
   },
-  componentWillUnmount: function() {
+
+  componentWillUnmount() {
     MessageStore.removeChangeListener(this._onChange);
     socket.removeListener(Events.client.NICK, this._onNick);
   },
-  render: function() {
+
+  render() {
     var messages = MessageStore.getMessages(this.state.active);
     return (
       <div className="chatContainer">
@@ -48,18 +52,19 @@ module.exports = React.createClass({
       </div>
     );
   },
-  _addTab: function(room) {
+
+  _addTab(room) {
     socket.emit(Events.client.JOIN, new Events.Join(room));
 
     this.setState({active: room});
   },
-  _activateTab: function(tab) {
+  _activateTab(tab) {
     this.setState({active: tab});
   },
-  _onChange: function() {
+  _onChange() {
     this.setState({messages: MessageStore.getAll()});
   },
-  _onNick: function(nick) {
+  _onNick(nick) {
     this.setState({nick: nick});
   }
 });
