@@ -6,7 +6,7 @@ module.exports = React.createClass({
       var tabs = this.props.tabs.map(function(tab) {
           var active = tab === this.props.active ? "active" : "";
           return (
-              <button className={active}>{tab}</button>
+              <button className={'tab ' + active}>{tab}</button>
           );
       }.bind(this));
       return (
@@ -23,7 +23,8 @@ module.exports = React.createClass({
       this.props.onAdd(tab);
   },
   _setActive(e) {
-    if (e.target && e.target.nodeName === "BUTTON")
+    console.log('set active');
+    if (e.target && e.target.className.indexOf('tab') !== -1)
       this.props.onActivate(e.target.innerText);
   }
 });
