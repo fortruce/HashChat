@@ -14,7 +14,6 @@ var babel = require('babel/register'),
     NickManager = require('./NickManager'),
     RoomManager = require('./RoomManager');
 
-// Initialize Components
 RoomManager.init(pubsub);
 TwitterManager.init(pubsub, io);
 NickManager.init(pubsub);
@@ -23,7 +22,8 @@ NickManager.init(pubsub);
 app.use(express.static(path.join(__dirname, '..', '..', '..', 'public')));
 
 io.on(Events.socket.CONNECTION, function(socket) {
-  // generate a random nick for the new socket
+  // Send out and internal CONNECT event since the Socket publishes no
+  // individual CONNECT
   pubsub.publish(Events.internal.CONNECT, new Events.internal.Connect(socket));
 
   function publishEvent(event) {
@@ -36,10 +36,9 @@ io.on(Events.socket.CONNECTION, function(socket) {
     };
   }
 
-  // Register forwarding of socket Events to pubsub
+  // Forward all socket Events.client events on to pubsub
   for (var key in Events.client) {
     if (Events.client.hasOwnProperty(key)) {
-      // only register publishers Event strings
       var ev = Events.client[key];
       if (typeof ev === 'string') {
         socket.on(ev, publishEvent(ev));
