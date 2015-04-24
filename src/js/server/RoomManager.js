@@ -10,19 +10,18 @@ var rooms = {};
 function init(pubsub) {
 
   function join(socket, room) {
-    console.log('[RoomManager]: join(', socket.id, room, ')');
-
+    // Silently ignore invalid room join requests
     if (!isValid(room))
       return;
 
+    // Create the room if it doesn't exist - Publish ROOM_CREATE event
     if (!rooms[room]) {
-      // create the room and publish room created event
       rooms[room] = {ids: {},
                      count: 0};
       pubsub.publish(Events.internal.ROOM_CREATE, new Events.internal.RoomCreate(room));
     }
 
-    // socket already in room
+    // Socket is already a member of Room
     if (rooms[room].ids[socket.id])
       return;
 
@@ -36,7 +35,6 @@ function init(pubsub) {
   }
 
   function leave(socket, room) {
-    console.log('[RoomManager]: leave(', socket.id, room, ')');
     if (!rooms[room])
       return;
 
@@ -65,10 +63,7 @@ function init(pubsub) {
   }
 
   function disconnect(socket) {
-    // leave all rooms
-    console.log('[RoomManager]: disconnect(', socket.id, ')');
     socket.leaveAll();
-
     forAllRooms(socket, (r) => leave(socket, r));
   }
 
@@ -76,6 +71,7 @@ function init(pubsub) {
   pubsub.subscribe(Events.client.JOIN, (o) => join(o.socket, o.room));
   pubsub.subscribe(Events.client.LEAVE, (o) => leave(o.socket, o.room));
   pubsub.subscribe(Events.client.DISCONNECT, (o) => disconnect(o.socket));
+
   pubsub.subscribe(Events.internal.NICK_CHANGE, (o) => {
     var message = o.oldNick + ' is now known as ' + o.newNick;
     forAllRooms(o.socket, (r) => {
