@@ -89,4 +89,4 @@ function bundle(b) {
           .pipe(source(path.app))
           .pipe(rename('app.js'))
           .pipe(gulp.dest(path.build));
-};
+}
