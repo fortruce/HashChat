@@ -12,7 +12,7 @@ module.exports = React.createClass({
       return (
           <div className="tabs"
                onClick={this._setActive}>
-              {{tabs}}
+              {tabs}
               <EditableButton text=''
                               validator={this.props.validator}
                               onChange={this._onAdd} />
