@@ -1,80 +1,100 @@
 var React = require('react');
 
+/**
+ * Props
+ *
+ * initialText  [required]  The initial text value of the component.
+ * submit       [required]  Callback when when text is changed fn(text).
+ *
+ * isValid      [optional]  Callback that returns true/false to validate
+ *                          input. Submit will only be called if isValid.
+ */
+
 module.exports = React.createClass({
-  getInitialState: function() {
+  getInitialState() {
     return {editing: false,
-            valid: true,
-            text: this.props.text};
+            text: this.props.initialText,
+            previousValue: this.props.initialText};
   },
-  componentWillReceiveProps: function(props) {
-    this.setState({text: props.text});
-  },
-  toggleEditing: function() {
-    var e = !this.state.editing;
 
-    // revert input if edited value is not valid
-    if (this.state.editing && !this.valid())
-      this.setState({editing: e, text: this.props.text, valid: true});
+  componentWillReceiveProps(props) {
+    this.setState({text: props.initialText,
+                   editing: false});
+  },
 
-    this.setState({editing: e});
-  },
-  onChange: function(e) {
-    var v = e.target.value.trim();
-    this.setState({text: v,
-                  valid: this.valid(v)});
-  },
-  valid: function() {
-    var t = React.findDOMNode(this.refs.input).value.trim();
-    return this.props.validator(t);
-  },
-  commitEdit: function() {
-    this.toggleEditing();
-
-    if (this.valid())
-      this.props.onChange(this.state.text);
-  },
-  onEnter: function(e) {
-    var key = e.keyCode || e.which;
-    if (key === 13) {
-      this.commitEdit();
+  /**
+   * When component renders, give <input> focus if editing.
+   */
+  componentDidUpdate() {
+    if (this.state.editing) {
+      var input = React.findDOMNode(this.refs.input);
+      if (document.activeElement !== input) {
+        var val = input.value;
+        input.value = val;
+        input.focus();
+      }
     }
   },
-  onBlur: function(e) {
-    if (this.state.editing)
-      this.commitEdit();
+
+  /**
+   * Input onChange handler to update state.
+   * @param  {DOMEvent} e
+   */
+  onChange(e) {
+    var text = e.target.value.trim();
+    this.setState({text: text});
   },
-  componentDidUpdate: function() {
-    if (!this.state.editing)
-      return;
 
-    var input = React.findDOMNode(this.refs.input);
-    if (document.activeElement === input)
-      return;
+  /**
+   * Toggle the editing mode. When moving from editing -> !editing,
+   *   if isValid: submit value and update previousValue
+   *   else: reset text to previousValue
+   * @param  {[type]} e [description]
+   * @return {[type]}   [description]
+   */
+  toggleEditing(e) {
+    if (this.state.editing) {
+      //going from editing to done editing, submit change
+      var val = e.target.value.trim();
 
-    // refresh value to put cursor at end
-    var val = input.value;
-    input.value = val;
-    input.focus();
+      if (this.props.isValid && !this.props.isValid(val))
+        return this.setState({editing: !this.state.editing,
+                              text: this.state.previousValue});
+
+      this.props.submit(val);
+      return this.setState({editing: !this.state.editing,
+                            previousValue: this.state.text});
+    }
+
+    this.setState({editing: !this.state.editing});
   },
-  render: function() {
-    var styles = this.state.editing ? [{}, {display: 'none'}] :
-                                      [{display: 'none'}, {}];
 
-    var v = this.state.valid ? '' : 'invalid';
+  onKey(e) {
+    var key = e.keyCode || e.which;
+    if (key === 13) //enter
+      this.toggleEditing(e);
+  },
 
-    return (
-      <div className={'editableButton ' + v}>
-       <button onClick={this.toggleEditing}
-               style={styles[1]}>
-         {this.state.text}
-       </button>
-       <input onBlur={this.onBlur}
-              onChange={this.onChange}
-              onKeyPress={this.onEnter}
-              style={styles[0]}
-              type="text" ref="input"
-              value={this.state.text}  />
-      </div>
-    );
+  render() {
+    if (this.state.editing) {
+      var className = '';
+      if (this.props.isValid && !this.props.isValid(this.state.text))
+        className = 'invalid';
+      return (
+        <input  ref='input'
+                type="text"
+                className={className}
+                value={this.state.text}
+                onChange={this.onChange}
+                onKeyPress={this.onKey}
+                onBlur={this.toggleEditing} />
+      );
+    } else {
+      return (
+        <button onClick={this.toggleEditing}>
+          {this.state.text}
+        </button>
+      );
+    }
   }
 });

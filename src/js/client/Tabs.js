@@ -13,9 +13,9 @@ module.exports = React.createClass({
           <div className="tabs"
                onClick={this._setActive}>
               {tabs}
-              <EditableButton text=''
-                              validator={this.props.validator}
-                              onChange={this._onAdd} />
+              <EditableButton initialText=''
+                              isValid={this.props.validator}
+                              submit={this._onAdd} />
           </div>
       );
   },

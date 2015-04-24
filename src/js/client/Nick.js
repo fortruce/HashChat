@@ -7,13 +7,13 @@ var React = require('react'),
 module.exports = React.createClass({
     render() {
         return (
-            <EditableButton text={this.props.nick}
-                            validator={isValid}
+            <EditableButton initialText={this.props.nick}
+                            isValid={isValid}
                             className="nick"
-                            onChange={this._onChange} />
+                            submit={this.submit} />
         );
     },
-    _onChange(nick) {
+    submit(nick) {
         if (nick !== this.props.nick)
             socket.emit(Events.client.NICK, new Events.client.Nick(nick));
     }
